@@ -154,7 +154,7 @@ footer { font-size: 12px; color: var(--muted); }
 <body>
 <div class="wrap" id="app">
   <header class="mast">
-    <div class="eyebrow">Kongsbakken VGS · English club</div>
+    <div class="eyebrow">Kongsbakken VGS · Schmidt</div>
     <h1>Kongsbakken Jeopardy</h1>
     <p>Three contestants, twenty-five clues, one Final Jeopardy. The winner stays on the board, and a run counts every game until the champion loses, including that one.</p>
     <p><a class="qa-link" href="http://jeopardylabs.com/171958" target="_blank" rel="noopener">All questions and answers so far ↗</a></p>
@@ -254,16 +254,15 @@ function hallHTML() {
   return `<section id="hall"><div class="head-row"><h2>Hall of Fame</h2><span class="muted">Best run per player, all seasons</span></div>
   <div class="panel scroll"><table><thead><tr><th></th><th>Player</th><th>Season</th><th class="r">Games</th><th class="r">Points</th></tr></thead><tbody>
   ${best.map((r, i) => `<tr class="${i === 0 ? "top1" : ""}"><td class="rank">${i + 1}</td><td><span class="name">${esc(r.name)}</span><span class="cls-chip">${esc(r.cls || "")}</span>${r.open && r.season === DATA.current ? `<span class="live">live</span>` : ""}<span class="m-season">${esc(lbl(r.season))}</span></td><td><span class="season-chip">${esc(lbl(r.season))}</span></td><td class="r">${r.rounds}</td><td class="r">${sc(r.total)}</td></tr>`).join("")}
-  </tbody></table></div>
-  <p class="note">Spring 2021 was played as a tournament in rounds, so its two entries are the totals recorded that year.</p></section>`;
+  </tbody></table></div></section>`;
 }
 
 function champsHTML() {
   const cards = DATA.seasons.map(s => ({ s, c: championOf(s) })).filter(x => x.c).reverse();
   if (!cards.length) return "";
   return `<section id="champions"><h2>Champions</h2><div class="champs">
-  ${cards.map(({ s, c }) => `<div class="champ-card"><div class="yr">${esc(seasonLabel(s))}</div><div class="who">${esc(c.name)}</div><div class="pts">${esc(c.cls || "")} · ${s.format === "tournament" ? `won the final, ${fmt(c.score)}` : `${fmt(c.score)} after the final`}</div></div>`).join("")}
-  </div><p class="note">Finalists start the final with the total of their best run, so a final score includes it.</p></section>`;
+  ${cards.map(({ s, c }) => `<div class="champ-card"><div class="yr">${esc(seasonLabel(s))}</div><div class="who">${esc(c.name)}</div><div class="pts">${esc(c.cls || "")} · ${fmt(c.score)}</div></div>`).join("")}
+  </div></section>`;
 }
 
 function recordsHTML() {
@@ -293,7 +292,7 @@ function recordsHTML() {
   ].filter(Boolean);
   return `<section id="records"><h2>Records</h2><div class="records">
   ${recs.map(([v, w, who]) => `<div class="rec"><div class="eyebrow">${esc(w)}</div><div class="val">${esc(v)}</div><div class="what">${esc(who)}</div></div>`).join("")}
-  </div><p class="note">Records leave out the finals. Spring 2021 counts for games and wins but not for runs.</p></section>`;
+  </div><p class="note">Records leave out the finals.</p></section>`;
 }
 
 let archiveSeason = null;
@@ -439,7 +438,7 @@ async function save(mutate) {
 const headerHTML = app.querySelector("header").outerHTML;
 function render() {
   app.innerHTML = headerHTML + heroHTML() + champsHTML() + hallHTML() + recordsHTML() + archiveHTML() +
-    `<footer>Results kept by the English department at Kongsbakken VGS, Tromsø. Seasons 2020–21 to 2023–24 from the club's score sheets.</footer>`;
+    `<footer>Kongsbakken VGS, Tromsø</footer>`;
   const slot = document.getElementById("editor-slot");
   if (slot) slot.innerHTML = editorHTML();
 }
