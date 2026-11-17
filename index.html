@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Kongsbakken Jeopardy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style id="jeo-style">
+/* Layout: one column of stacked panels; a run is drawn as a strip of game tiles, the club's own scoreboard. */
+:root {
+  --bg: #f3f5f8; --surface: #ffffff; --ink: #16203a; --muted: #5d6680; --line: #dbe0e8;
+  --accent: #c2410c; --accent-soft: #fdeee6; --gold: #a16207; --gold-soft: #fbf3dc;
+  --neg: #b42318; --win: #15803d; --tile: #eef1f6;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1320; --surface: #161d2d; --ink: #e7ebf3; --muted: #9aa3b9; --line: #273149;
+  --accent: #fb8a4c; --accent-soft: #3a2116; --gold: #f2c45a; --gold-soft: #33290f;
+  --neg: #f87171; --win: #4ade80; --tile: #1f2840; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e1320; --surface: #161d2d; --ink: #e7ebf3; --muted: #9aa3b9; --line: #273149;
+  --accent: #fb8a4c; --accent-soft: #3a2116; --gold: #f2c45a; --gold-soft: #33290f;
+  --neg: #f87171; --win: #4ade80; --tile: #1f2840; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: clamp(30px, 6vw, 46px); font-weight: 800; line-height: 1.05; }
+h2 { font-size: 22px; font-weight: 800; }
+h3 { font-size: 16px; font-weight: 600; }
+.eyebrow { font: 600 11px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+.neg { color: var(--neg); }
+.mono { font-family: var(--mono); font-size: 12px; }
+section { display: grid; gap: 14px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; min-width: 0; }
+.head-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+
+/* masthead */
+.mast { display: grid; gap: 10px; }
+.mast p { margin: 0; max-width: 62ch; color: var(--muted); }
+.qa-link { display: inline-block; font-weight: 600; color: var(--accent); text-decoration: none; border-bottom: 1.5px solid currentColor; padding-bottom: 1px; }
+.qa-link:hover { opacity: .8; }
+
+/* hero: this season */
+.hero { display: grid; gap: 18px; }
+.champ { display: grid; gap: 6px; }
+.champ .who { font-family: var(--display); font-weight: 800; font-size: clamp(24px, 4.5vw, 34px); line-height: 1.1; }
+.champ .cls { font: 500 13px var(--mono); color: var(--muted); margin-left: 6px; }
+.empty { border: 1.5px dashed var(--line); border-radius: 12px; padding: 22px; display: grid; gap: 6px; }
+.empty strong { font-family: var(--display); font-size: 18px; }
+
+/* run strip */
+.strip { display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; }
+.tile { min-width: 58px; padding: 6px 8px; border-radius: 8px; background: var(--tile); display: grid; gap: 1px; text-align: center; }
+.tile b { font: 600 14px var(--body); font-variant-numeric: tabular-nums; }
+.tile span { font: 500 10px var(--mono); color: var(--muted); }
+.tile.w { box-shadow: inset 0 -3px 0 var(--win); }
+.tile.l { box-shadow: inset 0 -3px 0 var(--neg); }
+.tile.open { background: transparent; border: 1.5px dashed var(--line); color: var(--muted); align-content: center; font-size: 12px; }
+.total { font-family: var(--display); font-weight: 800; font-size: 28px; font-variant-numeric: tabular-nums; color: var(--accent); }
+.runs { display: grid; gap: 14px; }
+.run { display: grid; gap: 8px; padding-top: 14px; border-top: 1px solid var(--line); }
+.run:first-child { border-top: 0; padding-top: 0; }
+
+/* tables */
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th { text-align: left; font: 600 11px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 0 10px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td.r, th.r { text-align: right; }
+td.rank { font: 500 12px var(--mono); color: var(--muted); width: 2.5em; }
+tr.top1 td { background: var(--gold-soft); }
+tr.top1 td:first-child { border-radius: 8px 0 0 8px; } tr.top1 td:last-child { border-radius: 0 8px 8px 0; }
+.name { font-weight: 600; }
+.cls-chip { font: 500 11px var(--mono); color: var(--muted); margin-left: 4px; white-space: nowrap; }
+.season-chip { font: 500 12px var(--mono); color: var(--muted); white-space: nowrap; }
+.live { font: 600 10px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); padding: 2px 6px; border-radius: 4px; margin-left: 6px; white-space: nowrap; }
+
+/* champions */
+.champs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.champ-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 4px; align-content: start; }
+.champ-card .yr { font: 500 12px var(--mono); color: var(--gold); }
+.champ-card .who { font-family: var(--display); font-weight: 800; font-size: 19px; line-height: 1.15; }
+.champ-card .pts { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+
+/* records */
+.records { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.rec { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 4px; align-content: start; }
+.rec .val { font-family: var(--display); font-weight: 800; font-size: 26px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.rec .what { font-size: 13px; color: var(--muted); }
+
+/* archive */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { font: 600 13px var(--body); padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.tab[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.game-players { display: grid; gap: 2px; }
+.gp { display: flex; justify-content: space-between; gap: 12px; }
+.gp.won .pn { font-weight: 600; }
+.gp.won .ps { font-weight: 600; color: var(--win); }
+.cat { font-weight: 600; }
+.board-link { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
+.board-link span { color: var(--accent); font-size: 12px; }
+.boards { display: grid; gap: 3px; }
+.fj { display: grid; gap: 2px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.fj-k { font: 600 10px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); margin-right: 4px; }
+.fj-n { white-space: nowrap; }
+.rnd { font: 500 11px var(--mono); color: var(--muted); margin-right: 6px; }
+.mid { font-size: 11px; color: var(--muted); font-weight: 400; margin-right: 6px; }
+.board-link:hover { border-bottom-color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.final-tag { font: 600 10px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); margin-left: 6px; }
+
+/* editor */
+.btn { font: 600 14px var(--body); padding: 9px 14px; border-radius: 9px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.danger { background: transparent; color: var(--neg); border-color: var(--neg); }
+.btn:disabled { opacity: .5; cursor: default; }
+.link { background: none; border: 0; padding: 0; font: 600 12px var(--body); color: var(--accent); cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+form { display: grid; gap: 14px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.prow { display: grid; grid-template-columns: minmax(0, 3fr) minmax(70px, 1fr) minmax(90px, 1.2fr); gap: 8px; }
+label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+input, select { font: 15px var(--body); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); min-width: 0; width: 100%; box-sizing: border-box; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink); font-weight: 500; }
+.check input { width: auto; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.status { font-size: 13px; color: var(--muted); }
+.status.err { color: var(--neg); }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+footer { font-size: 12px; color: var(--muted); }
+@media (max-width: 560px) { .prow { grid-template-columns: 1fr 1fr; } .prow label:first-child { grid-column: 1 / -1; } }
+@media (prefers-reduced-motion: no-preference) { .tile { transition: transform .15s; } .tile:hover { transform: translateY(-1px); } }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <header class="mast">
+    <div class="eyebrow">Kongsbakken VGS · English club</div>
+    <h1>Kongsbakken Jeopardy</h1>
+    <p>Three contestants, twenty-five clues, one Final Jeopardy. The winner stays on the board, and a run counts every game until the champion loses, including that one.</p>
+    <p><a class="qa-link" href="http://jeopardylabs.com/171958" target="_blank" rel="noopener">All questions and answers so far ↗</a></p>
+  </header>
+  <noscript>This page needs JavaScript to show the results.</noscript>
+</div>
+<script type="application/json" id="jeo-data">{"current":"2026-27","seasons":[{"id":"2020-21","label":"Spring 2021","format":"tournament","games":[{"code":"R1G1","date":"2021-02-11","final":false,"players":[{"name":"Magnus Haukebø","cls":"3STC","score":400},{"name":"Frikk Moen Johnsen","cls":"3STC","score":-100},{"name":"Vakaris Rogaciovas","cls":"3STE","score":0}],"correct":8,"of":25,"board":"Ad Slogans","url":"https://jeopardylabs.com/play/ad-slogans-round-1"},{"code":"R2G2","date":"2021-02-11","final":false,"players":[{"name":"Audun Hauge","cls":"2STE","score":200},{"name":"Frikk Moen Johnsen","cls":"3STC","score":-600},{"name":"Åse Herder-Augestad","cls":"3STE","score":1800}],"correct":9,"of":25,"board":"Fill in their dates","url":"https://jeopardylabs.com/play/fill-in-their-dates-round-2"},{"code":"R1G2","date":"2021-02-15","final":false,"players":[{"name":"Lars-Kristian Nilsen","cls":"3STD","score":600},{"name":"Sirild Schwenke","cls":"3STF","score":-600},{"name":"Surajja Zeynalli","cls":"2STE","score":0}],"correct":5,"of":25,"board":"Differs by a vowel","url":"https://jeopardylabs.com/play/differs-by-a-vowel-round-1"},{"code":"R1G4","date":"2021-02-18","final":false,"players":[{"name":"Daniel Larssen Stenklev","cls":"3STE","score":200},{"name":"Vakaris Rogaciovas","cls":"3STE","score":-200},{"name":"Elias Crogh","cls":"3STE","score":900}],"correct":11,"of":25,"board":"Epistolary novels","url":"https://jeopardylabs.com/play/epistolary-novels-round-1","fj":[{"category":"WORD HISTORY","solved":1,"players":2}]},{"code":"R1G3","date":"2021-03-04","final":false,"players":[{"name":"Aslak Weiland Schwenke","cls":"2STF","score":0},{"name":"Audun Hauge","cls":"2STE","score":1000},{"name":"Fredrik Halvorsen","cls":"3STD","score":300}],"correct":11,"of":25,"board":"We Border Germany","url":"https://jeopardylabs.com/play/we-border-germany-round-1","fj":[{"category":"MEDICAL NEWS: 2018","solved":0,"players":2}]},{"code":"R1G5","date":"2021-03-11","final":false,"players":[{"name":"Surajja Zeynalli","cls":"2STE","score":-400},{"name":"Frikk Moen Johnsen","cls":"3STC","score":800},{"name":"Marcus Bekkelund Moe","cls":"3STE","score":-700}],"correct":8,"of":25,"board":"Sound advice","url":"https://jeopardylabs.com/play/sound-advice-round-1"},{"code":"R2G1","date":"2021-03-18","final":false,"players":[{"name":"Magnus Haukebø","cls":"3STC","score":-600},{"name":"Lars-Kristian Nilsen","cls":"3STD","score":1},{"name":"Elias Crogh","cls":"3STE","score":500}],"correct":7,"of":25,"board":"Let’s Make a Tree","url":"https://jeopardylabs.com/play/2021-01-23-17","fj":[{"category":"NEW ENGLAND","solved":0,"players":2}]},{"code":"R1G6","date":"2021-03-25","final":false,"players":[{"name":"Åse Herder-Augestad","cls":"3STE","score":600},{"name":"Linnea Botten Nyan","cls":"3STE","score":-500},{"name":"Yalda Bahadori","cls":"3STE","score":-800},{"name":"Hedda Sagstuen Haugnes","cls":"3STE","score":500}],"correct":6,"of":25,"board":"I’m on the Money","url":"https://jeopardylabs.com/play/im-on-the-money-round-1","fj":[{"category":"ANCIENT LITERATURE","solved":1,"players":2}]},{"code":"R1G7","date":"2021-04-15","final":false,"players":[{"name":"Surajja Zeynalli","cls":"2STE","score":0},{"name":"Audun Hauge","cls":"2STE","score":300},{"name":"Denisa Borit","cls":"2STE","score":1200}],"correct":10,"of":25,"board":"“Mac”-inations","url":"https://jeopardylabs.com/play/mac-inations","fj":[{"category":"COMPOUND WORDS","solved":1,"players":2}]},{"code":"R2G3","date":"2021-04-29","final":false,"players":[{"name":"Denisa Borit","cls":"2STE","score":2500},{"name":"Lars-Kristian Nilsen","cls":"3STD","score":700},{"name":"Audun Hauge","cls":"2STE","score":2400}],"correct":14,"of":25,"board":"Book Series","url":"https://jeopardylabs.com/play/book-series-round-2","fj":[{"category":"COLLEGES & UNIVERSITIES","solved":0,"players":3}]},{"code":"Final","date":"2021-05-20","final":true,"board":"Element Names","url":"https://jeopardylabs.com/play/element-names-round-1","board2":"Political Philosophy","url2":"https://jeopardylabs.com/play/political-philosophy-round-2","players":[{"name":"Elias Crogh","cls":"3STE","score":100,"mid":300},{"name":"Åse Herder-Augestad","cls":"3STE","score":2400,"mid":900},{"name":"Denisa Borit","cls":"2STE","score":1800,"mid":800}],"fj":[{"category":"OTHER NATIONS' PRESIDENTS","solved":0,"players":3}],"correct":21,"of":50}]},{"id":"2021-22","label":"2021–22","format":"runs","games":[{"code":"G1","date":"2021-09-16","final":false,"players":[{"name":"Jostein Skogholt","cls":"2MUB","score":1000},{"name":"Maja Daldorff Kanck","cls":"2STA","score":1050},{"name":"Tuva Marie Eaton Johansen","cls":"2STE","score":-700}],"correct":11,"of":25,"board":"Around the House","url":"https://jeopardylabs.com/play/around-the-house-round-1","fj":[{"category":"AMERICAN HISTORY","solved":2,"players":2}]},{"code":"G2","date":"2021-09-21","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":800},{"name":"Audun Hauge","cls":"3STE","score":3400},{"name":"Sofie Larsen Øverli","cls":"2STF","score":0}],"correct":8,"of":22,"board":"Literary Characters","url":"https://jeopardylabs.com/play/literary-characters-round-2","fj":[{"category":"INTERNATIONAL ORGANIZATIONS","solved":1,"players":2}]},{"code":"G3","date":"2021-09-23","final":false,"players":[{"name":"Audun Hauge","cls":"3STE","score":1400},{"name":"Fatma Yazgan","cls":"2STF","score":0},{"name":"Emma Hermine Nilsen Vittring","cls":"2STF","score":500}],"correct":14,"of":25,"board":"Graphic Novels","url":"https://jeopardylabs.com/play/graphic-novels-round-1","fj":[{"category":"PLACES OF LORE","solved":0,"players":3}]},{"code":"G4","date":"2021-09-28","final":false,"players":[{"name":"Maja Daldorff Kanck","cls":"2STA","score":0},{"name":"Denisa Borit","cls":"3STE","score":900},{"name":"Audun Hauge","cls":"3STE","score":1800}],"correct":9,"of":25,"board":"Birthplaces","url":"https://jeopardylabs.com/play/birthplaces-round-2","fj":[{"category":"ON BROADWAY","solved":0,"players":2}]},{"code":"G5","date":"2021-09-30","final":false,"players":[{"name":"Audun Hauge","cls":"3STE","score":2200},{"name":"Fatma Yazgan","cls":"2STF","score":1000},{"name":"Emma Hermine Nilsen Vittring","cls":"2STF","score":1100}],"correct":17,"of":25,"board":"Kings & Queens","url":"https://jeopardylabs.com/play/kings-queens-round-1","fj":[{"category":"16th CENTURY NAMES","solved":1,"players":3}]},{"code":"G6","date":"2021-10-12","final":false,"players":[{"name":"Audun Hauge","cls":"3STE","score":1300},{"name":"Denisa Borit","cls":"3STE","score":1700},{"name":"Maja Daldorff Kanck","cls":"2STA","score":0}],"correct":12,"of":25,"board":"A Lil Rap Category","url":"https://jeopardylabs.com/play/a-lil-rap-category","fj":[{"category":"NORTH AMERICAN CITIES","solved":0,"players":3}]},{"code":"G7","date":"2021-10-14","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":1100},{"name":"Surajja Zeynalli","cls":"3STE","score":-800},{"name":"Kristine Holten-Jakobsen","cls":"3MUB","score":0}],"correct":9,"of":25,"board":"Where You Go From Here","url":"https://jeopardylabs.com/play/where-you-go-from-here-round-1","fj":[{"category":"ANCIENT TIMES","solved":0,"players":2}]},{"code":"G8","date":"2021-10-21","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":2200},{"name":"Audun Hauge","cls":"3STE","score":3200},{"name":"Jostein Skogholt","cls":"2MUB","score":-400}],"correct":8,"of":24,"board":"2-Letter Words","url":"https://jeopardylabs.com/play/2-letter-words-round-2","fj":[{"category":"BESTSELLING NOVELS","solved":2,"players":2},{"category":"EUROPEAN COUNTRY NAMES","solved":2,"players":2}]},{"code":"G9","date":"2021-10-28","final":false,"players":[{"name":"Audun Hauge","cls":"3STE","score":0},{"name":"Sunniva Remman-Antonsen","cls":"3MUB","score":1900},{"name":"Maja Daldorff Kanck","cls":"2STA","score":400}],"correct":17,"of":25,"board":"Colors of the Rainbow","url":"https://jeopardylabs.com/play/colors-of-the-rainbow-round-1","fj":[{"category":"NOTORIOUS","solved":0,"players":3}]},{"code":"G10","date":"2021-11-02","final":false,"players":[{"name":"Sunniva Remman-Antonsen","cls":"3MUB","score":2000},{"name":"Denisa Borit","cls":"3STE","score":3000},{"name":"Aslak Weiland Schwenke","cls":"3STF","score":0}],"correct":15,"of":25,"board":"Punctuation","url":"https://jeopardylabs.com/play/punctuation-round-2","fj":[{"category":"LANDMARKS","solved":0,"players":3}]},{"code":"G11","date":"2021-11-09","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":600},{"name":"Maksim Golikov","cls":"3STF","score":-500},{"name":"Gregor Heil","cls":"3STF","score":0}],"correct":15,"of":25,"board":"There’s an emoji for that","url":"https://jeopardylabs.com/play/theres-an-emoji-for-that-round-1","fj":[{"category":"TOYS & GAMES","solved":0,"players":2}]},{"code":"G12","date":"2021-11-11","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":2400},{"name":"Emma Hermine Nilsen Vittring","cls":"2STF","score":0},{"name":"Fatma Yazgan","cls":"2STF","score":2200}],"correct":11,"of":24,"board":"The Western Hemisphere","url":"https://jeopardylabs.com/play/the-western-hemisphere-round-2"},{"code":"G13","date":"2021-11-18","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":5400},{"name":"Gregor Heil","cls":"3STF","score":4400},{"name":"Joakim Flosand Davidsen","cls":"3STF","score":1000}],"correct":19,"of":25,"board":"Extracurricular","url":"https://jeopardylabs.com/play/extracurricular-round-2","fj":[{"category":"EUROPEAN AUTHORS","solved":1,"players":3}]},{"code":"G14","date":"2021-11-25","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":400},{"name":"Aslak Weiland Schwenke","cls":"3STF","score":0},{"name":"Maksim Golikov","cls":"3STF","score":-300}],"correct":9,"of":25,"board":"People in American History","url":"https://jeopardylabs.com/play/people-in-american-history-round-1","fj":[{"category":"THE 1940s","solved":0,"players":2}]},{"code":"G15","date":"2021-12-02","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":2100},{"name":"Audun Hauge","cls":"3STE","score":600},{"name":"Maja Daldorff Kanck","cls":"2STA","score":200}],"correct":17,"of":25,"board":"Broadway Musicals by Songs","url":"https://jeopardylabs.com/play/broadway-musicals-by-songs-round-1","fj":[{"category":"TOYS & GAMES","solved":2,"players":3}]},{"code":"G16","date":"2021-12-07","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":4000},{"name":"Maksim Golikov","cls":"3STF","score":-1800},{"name":"Jostein Skogholt","cls":"2MUB","score":-400}],"correct":12,"of":25,"board":"Ancient Rome","url":"https://jeopardylabs.com/play/ancient-rome-round-2"},{"code":"G17","date":"2021-12-09","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":400},{"name":"Audun Hauge","cls":"3STE","score":0},{"name":"Tayler Leigh Evang","cls":"1STE","score":850}],"correct":13,"of":25,"board":"A Bit of Lit","url":"https://jeopardylabs.com/play/a-bit-of-lit-round-1","fj":[{"category":"WORLD LANDMARKS","solved":1,"players":3}]},{"code":"G18","date":"2021-12-14","final":false,"players":[{"name":"Joakim Flosand Davidsen","cls":"3STF","score":2000},{"name":"Gregor Heil","cls":"3STF","score":0},{"name":"Aslak Weiland Schwenke","cls":"3STF","score":0}],"correct":14,"of":25,"board":"Rhyme Time","url":"https://jeopardylabs.com/play/rhyme-time-round-2","fj":[{"category":"EPITAPHS","solved":0,"players":3}]},{"code":"G19","date":"2022-01-20","final":false,"players":[{"name":"Joakim Flosand Davidsen","cls":"3STF","score":0},{"name":"Denisa Borit","cls":"3STE","score":300},{"name":"Audun Hauge","cls":"3STE","score":1750}],"correct":17,"of":25,"board":"Explorers","url":"https://jeopardylabs.com/play/explorers-round-1-2","fj":[{"category":"SYMBOLIC OBJECTS","solved":0,"players":3}]},{"code":"G20","date":"2022-01-25","final":false,"players":[{"name":"Audun Hauge","cls":"3STE","score":3600},{"name":"Tayler Leigh Evang","cls":"1STE","score":1300},{"name":"Gregor Heil","cls":"3STF","score":0}],"correct":18,"of":25,"board":"Your Old Pal Al Gebra","url":"https://jeopardylabs.com/play/your-old-pal-al-gebra-round-2","fj":[{"category":"ENGLISH HISTORY","solved":1,"players":3}]},{"code":"G21","date":"2022-02-01","final":false,"players":[{"name":"Audun Hauge","cls":"3STE","score":500},{"name":"Denisa Borit","cls":"3STE","score":0},{"name":"Maja Daldorff Kanck","cls":"2STA","score":0}],"correct":13,"of":25,"board":"Cities in the country","url":"https://jeopardylabs.com/play/cities-in-the-country-round-1","fj":[{"category":"OBSERVANCES","solved":0,"players":3}]},{"code":"G22","date":"2022-02-03","final":false,"players":[{"name":"Audun Hauge","cls":"3STE","score":1400},{"name":"Sindre Lund Kielland","cls":"3STC","score":0},{"name":"Sofie Larsen Øverli","cls":"2STF","score":100}],"correct":17,"of":25,"board":"Find a Synonym","url":"https://jeopardylabs.com/play/find-a-synonym-round-2","fj":[{"category":"CHEMICAL SYMBOL WORDPLAY","solved":0,"players":3}]},{"code":"G23","date":"2022-02-08","final":false,"players":[{"name":"Audun Hauge","cls":"3STE","score":1000},{"name":"Fatma Yazgan","cls":"2STF","score":0},{"name":"Emma Hermine Nilsen Vittring","cls":"2STF","score":1300}],"correct":16,"of":25,"board":"Apple","url":"https://jeopardylabs.com/play/apple-round-1","fj":[{"category":"WORLD LEADERS","solved":1,"players":2}]},{"code":"G24","date":"2022-02-10","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":1100},{"name":"Jostein Skogholt","cls":"2MUB","score":750}],"correct":10,"of":25,"board":"National","url":"https://jeopardylabs.com/play/national-round-1","fj":[{"category":"MOVIE SOUNDTRACKS","solved":1,"players":2}]},{"code":"G25","date":"2022-02-15","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":2800},{"name":"Sindre Lund Kielland","cls":"3STC","score":-2200},{"name":"Maja Daldorff Kanck","cls":"2STA","score":0}],"correct":10,"of":25,"board":"In & Around the State Capital","url":"https://jeopardylabs.com/play/in-around-the-state-capital-round-2","fj":[{"category":"THE POSTCOLONIAL WORLD","solved":0,"players":2}]},{"code":"G26","date":"2022-02-17","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":0},{"name":"Tayler Leigh Evang","cls":"1STE","score":600},{"name":"Audun Hauge","cls":"3STE","score":1000}],"correct":16,"of":25,"board":"History, Over on the Left","url":"https://jeopardylabs.com/play/history-over-on-the-left-round-1"},{"code":"G27","date":"2022-02-22","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":3800},{"name":"Emma Hermine Nilsen Vittring","cls":"2STF","score":300},{"name":"Gregor Heil","cls":"3STF","score":0}],"correct":13,"of":25,"board":"Taking the driving test","url":"https://jeopardylabs.com/play/taking-the-driving-test-round-2"},{"code":"G28","date":"2022-02-24","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":1500},{"name":"Maja Daldorff Kanck","cls":"2STA","score":-400},{"name":"Aslak Weiland Schwenke","cls":"3STF","score":0}],"correct":8,"of":25,"board":"“Home” Entertainment","url":"https://jeopardylabs.com/play/home-entertainment-round-1","fj":[{"category":"WORLD CAPITALS","solved":1,"players":2}]},{"code":"G29","date":"2022-03-01","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":100},{"name":"Eskil Johan Langhaug","cls":"1STF","score":200},{"name":"Gregor Heil","cls":"3STF","score":-1000}],"correct":10,"of":25,"board":"Killed off the tv-show","url":"https://jeopardylabs.com/play/killed-off-the-tv-show-round-1","fj":[{"category":"NOVELISTS","solved":0,"players":2}]},{"code":"G30","date":"2022-03-03","final":false,"players":[{"name":"Eskil Johan Langhaug","cls":"1STF","score":0},{"name":"Tayler Leigh Evang","cls":"1STE","score":100},{"name":"Audun Hauge","cls":"3STE","score":500}],"correct":14,"of":25,"board":"Homeland","url":"https://jeopardylabs.com/play/homeland-round-2","fj":[{"category":"RELIGION","solved":0,"players":2}]},{"code":"G31","date":"2022-03-15","final":false,"players":[{"name":"Audun Hauge","cls":"3STE","score":0},{"name":"Gregor Heil","cls":"3STF","score":0},{"name":"Denisa Borit","cls":"3STE","score":800}],"correct":14,"of":25,"board":"Fiction","url":"https://jeopardylabs.com/play/fiction-round-1","fj":[{"category":"ANCIENT HISTORY","solved":0,"players":3}]},{"code":"G32","date":"2022-03-17","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":3200},{"name":"Eskil Johan Langhaug","cls":"1STF","score":-200},{"name":"Ulrik Irgens","cls":"1STF","score":-400}],"correct":5,"of":25,"board":"Geography","url":"https://jeopardylabs.com/play/geography-round-2-2","fj":[{"category":"THE 50 STATES","solved":1,"players":3}]},{"code":"G33","date":"2022-03-22","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":400},{"name":"Gregor Heil","cls":"3STF","score":300},{"name":"Aslak Weiland Schwenke","cls":"3STF","score":800}],"correct":9,"of":25,"board":"A Tour of Europe","url":"https://jeopardylabs.com/play/a-tour-of-europe-round-1","fj":[{"category":"20th CENTURY ART","solved":2,"players":3}]},{"code":"G34","date":"2022-03-24","final":false,"players":[{"name":"Aslak Weiland Schwenke","cls":"3STF","score":2000},{"name":"Maja Daldorff Kanck","cls":"2STA","score":-1400},{"name":"Tuva Marie Eaton Johansen","cls":"2STE","score":-200}],"correct":9,"of":25,"board":"Men of Science","url":"https://jeopardylabs.com/play/men-of-science-round-2","fj":[{"category":"U.S. DEMOGRAPHICS","solved":0,"players":3}]},{"code":"G35","date":"2022-03-29","final":false,"players":[{"name":"Aslak Weiland Schwenke","cls":"3STF","score":1800},{"name":"Denisa Borit","cls":"3STE","score":1000},{"name":"Maksim Golikov","cls":"3STF","score":0}],"correct":12,"of":25,"board":"New Words in the Merriam-Webster Dictionary","url":"https://jeopardylabs.com/play/new-words-in-the-merriam-webster-dictionary-round-1","fj":[{"category":"INTERNATIONAL DISPUTES","solved":2,"players":3}]},{"code":"G36","date":"2022-03-31","final":false,"players":[{"name":"Aslak Weiland Schwenke","cls":"3STF","score":-600},{"name":"Gregor Heil","cls":"3STF","score":0},{"name":"Joakim Flosand Davidsen","cls":"3STF","score":1000}],"correct":12,"of":25,"board":"Second Book in the Series","url":"https://jeopardylabs.com/play/second-book-in-the-series-round-2","fj":[{"category":"U.S. CITIES","solved":0,"players":3}]},{"code":"G37","date":"2022-04-05","final":false,"players":[{"name":"Aslak Weiland Schwenke","cls":"3STF","score":400},{"name":"Maja Daldorff Kanck","cls":"2STA","score":1300},{"name":"Aurora Knudsen Brandvoll","cls":"2STA","score":0}],"correct":10,"of":25,"board":"Poetic Words","url":"https://jeopardylabs.com/play/poetic-words-round-1","fj":[{"category":"MOVIE & BOOK TITLES","solved":0,"players":2}]},{"code":"G38","date":"2022-04-07","final":false,"players":[{"name":"Maja Daldorff Kanck","cls":"2STA","score":200},{"name":"Gregor Heil","cls":"3STF","score":-1000},{"name":"Snorre Hansen Wilhelmsen","cls":"1STF","score":-2400}],"correct":6,"of":25,"board":"Prison Nicknames","url":"https://jeopardylabs.com/play/prison-nicknames-round-2","fj":[{"category":"BUSINESS 2019","solved":0,"players":3}]},{"code":"G39","date":"2022-04-19","final":false,"players":[{"name":"Maja Daldorff Kanck","cls":"2STA","score":0},{"name":"Denisa Borit","cls":"3STE","score":1200},{"name":"Eskil Johan Langhaug","cls":"1STF","score":301}],"correct":12,"of":25,"board":"“Un”Category","url":"https://jeopardylabs.com/play/2021-02-26-12","fj":[{"category":"POLITICAL PHRASES","solved":0,"players":3}]},{"code":"G40","date":"2022-04-21","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":1000},{"name":"Gregor Heil","cls":"3STF","score":0},{"name":"Audun Hauge","cls":"3STE","score":0}],"correct":10,"of":25,"board":"3-letter reading","url":"https://jeopardylabs.com/play/3-letter-reading-round-2","fj":[{"category":"WORD ORIGINS","solved":0,"players":3}]},{"code":"G41","date":"2022-04-26","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":400},{"name":"Yuliya Zabelina","cls":"1STA","score":-100},{"name":"Emma-Claudia Poponut","cls":"1STA","score":-800}],"correct":4,"of":25,"board":"2 Verbs in One","url":"https://jeopardylabs.com/play/2-verbs-in-one-round-1"},{"code":"G42","date":"2022-04-28","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":1200},{"name":"Audun Hauge","cls":"3STE","score":2400},{"name":"Sindre Lund Kielland","cls":"3STC","score":-2200}],"correct":11,"of":25,"board":"Fancy Restaurants","url":"https://jeopardylabs.com/play/fancy-restaurants-round-2","fj":[{"category":"CLASSIC BRITISH NOVELS","solved":0,"players":4}]},{"code":"G43","date":"2022-05-03","final":false,"players":[{"name":"Audun Hauge","cls":"3STE","score":500},{"name":"Ema Oborilova","cls":"3STE","score":800},{"name":"Aslak Weiland Schwenke","cls":"3STF","score":-1100}],"correct":9,"of":25,"board":"Fashion from Head to Toe","url":"https://jeopardylabs.com/play/fashion-from-head-to-toe-round-1","fj":[{"category":"HISTORIC LISTS","solved":3,"players":3}]},{"code":"G44","date":"2022-05-05","final":false,"players":[{"name":"Ema Oborilova","cls":"3STE","score":-1200},{"name":"Denisa Borit","cls":"3STE","score":600},{"name":"Miwa Sofie Meling Dimmen","cls":"3STE","score":380}],"correct":7,"of":25,"board":"Fake Gnus","url":"https://jeopardylabs.com/play/fake-gnus-round-2","fj":[{"category":"OSCAR-WINNING FILMS","solved":0,"players":2}]},{"code":"G45","date":"2022-05-12","final":false,"players":[{"name":"Denisa Borit","cls":"3STE","score":400},{"name":"Aslak Weiland Schwenke","cls":"3STF","score":700},{"name":"Gregor Heil","cls":"3STF","score":-1000}],"correct":9,"of":25,"board":"Next","url":"https://jeopardylabs.com/play/next-round-1","fj":[{"category":"PLANTS & TREES","solved":1,"players":3}]},{"code":"G46","date":"2022-05-19","final":false,"players":[{"name":"Aslak Weiland Schwenke","cls":"3STF","score":600},{"name":"Fatma Yazgan","cls":"2STF","score":0},{"name":"Emma Hermine Nilsen Vittring","cls":"2STF","score":500}],"correct":7,"of":25,"board":"If I Were a Tibetan Man","url":"https://jeopardylabs.com/play/if-i-were-a-tibetan-man-round-2","fj":[{"category":"CLASSIC FICTION","solved":0,"players":2},{"category":"ART FIRSTS","solved":0,"players":2},{"category":"CONSTITUTIONS OF THE WORLD","solved":0,"players":2}]},{"code":"G47","date":"2022-05-24","final":false,"players":[{"name":"Aslak Weiland Schwenke","cls":"3STF","score":-100},{"name":"Denisa Borit","cls":"3STE","score":200},{"name":"Gregor Heil","cls":"3STF","score":600}],"correct":11,"of":25,"board":"Antonyms","url":"https://jeopardylabs.com/play/antonyms-round-1","fj":[{"category":"1950s PEOPLE","solved":0,"players":3}]},{"code":"Final","date":"2022-05-31","final":true,"board":"What'd the Captain Say?","url":"https://jeopardylabs.com/play/whatd-the-captain-say-round-2","board2":"Starts with a silent K","url2":"https://jeopardylabs.com/play/starts-with-a-silent-k-round-2","players":[{"name":"Denisa Borit","cls":"3STE","score":25200,"mid":null},{"name":"Audun Hauge","cls":"3STE","score":17000,"mid":null},{"name":"Gregor Heil","cls":"3STF","score":0,"mid":null}],"fj":[{"category":"LAW ENFORCEMENT","solved":1,"players":3}],"correct":25,"of":50}]},{"id":"2022-23","label":"2022–23","format":"runs","games":[{"code":"G1","date":"2022-09-01","final":false,"players":[{"name":"Maja Daldorff Kanck","cls":"3STA","score":0},{"name":"Tuva Marie Eaton Johansen","cls":"3STE","score":0},{"name":"Jonas Zakariassen","cls":"2STC","score":400}],"correct":5,"of":23,"board":"Here Comes the Judge Word","url":"https://jeopardylabs.com/play/here-comes-the-judge-word-round-1","fj":[{"category":"THE BIBLE","solved":0,"players":3}]},{"code":"G2","date":"2022-09-06","final":false,"players":[{"name":"Jonas Zakariassen","cls":"2STC","score":1300},{"name":"David Soltaninia","cls":"1STF","score":0},{"name":"Arve Lund Ryeng","cls":"1STC","score":2200}],"correct":10,"of":25,"board":"3-letter words with F","url":"https://jeopardylabs.com/play/3-letter-words-with-f-round-2","fj":[{"category":"CONSTITUTIONAL AMENDMENTS","solved":0,"players":3}]},{"code":"G3","date":"2022-09-08","final":false,"players":[{"name":"Arve Lund Ryeng","cls":"1STC","score":0},{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":2199},{"name":"Lea Lindner","cls":"1STC","score":0}],"correct":4,"of":24,"board":"Classic Metal Bands","url":"https://jeopardylabs.com/play/classic-metal-bands-round-1","fj":[{"category":"WORD HISTORY","solved":1,"players":1}]},{"code":"G4","date":"2022-09-13","final":false,"players":[{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":-1000},{"name":"Emil Guldbrandsen Josefsen","cls":"1STF","score":0},{"name":"Eirik Andreas Uhre","cls":"1STF","score":1700}],"correct":6,"of":25,"board":"Health Watch","url":"https://jeopardylabs.com/play/health-watch-round-2","fj":[{"category":"KINGS, QUEENS & PRESIDENTS","solved":0,"players":3}]},{"code":"G5","date":"2022-09-15","final":false,"players":[{"name":"Eirik Andreas Uhre","cls":"1STF","score":0},{"name":"Maja Daldorff Kanck","cls":"3STA","score":0},{"name":"Tuva Marie Eaton Johansen","cls":"3STE","score":997}],"correct":6,"of":25,"board":"Chiefs of State","url":"https://jeopardylabs.com/play/chiefs-of-state-round-1","fj":[{"category":"ASIAN GEOGRAPHY","solved":0,"players":3}]},{"code":"G6","date":"2022-09-22","final":false,"players":[{"name":"Jonas Zakariassen","cls":"2STC","score":1},{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":-100},{"name":"Jona Heandaret Mäkäla","cls":"1STF","score":0}],"correct":3,"of":25,"board":"1939: What a Year in Movies!","url":"https://jeopardylabs.com/play/1939-what-a-year-in-movies-round-1","fj":[{"category":"WORLD MAMMALS","solved":2,"players":4}]},{"code":"G7","date":"2022-09-27","final":false,"players":[{"name":"Tuva Marie Eaton Johansen","cls":"3STE","score":1200},{"name":"Ole Myrstad","cls":"1STC","score":400},{"name":"Arve Lund Ryeng","cls":"1STC","score":400}],"correct":6,"of":24,"board":"The 20th Century","url":"https://jeopardylabs.com/play/the-20th-century-13","fj":[{"category":"ANCIENT LITERATURE","solved":3,"players":9}]},{"code":"G8","date":"2022-09-29","final":false,"players":[{"name":"Tuva Marie Eaton Johansen","cls":"3STE","score":843},{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":200},{"name":"Maya-Sophie Gisela Lück","cls":"1STC","score":700}],"correct":8,"of":25,"board":"Pre “Sch”ool","url":"https://jeopardylabs.com/play/2021-03-16-361","fj":[{"category":"AMERICAN HISTORY","solved":2,"players":3}]},{"code":"G9","date":"2022-10-13","final":false,"players":[{"name":"Jona Heandaret Mäkäla","cls":"1STF","score":0},{"name":"Jonas Zakariassen","cls":"2STC","score":-200},{"name":"Jyotirmoya Swain","cls":"1STF","score":-1600}],"correct":5,"of":25,"board":"Cistern Cities","url":"https://jeopardylabs.com/play/cistern-cities-round-2"},{"code":"G10","date":"2022-10-18","final":false,"players":[{"name":"Jona Heandaret Mäkäla","cls":"1STF","score":-400},{"name":"Tor Erik Bartnes Wikmark","cls":"1STF","score":0},{"name":"Arve Lund Ryeng","cls":"1STC","score":1}],"correct":2,"of":25,"board":"\"S\"even-letter Science","url":"https://jeopardylabs.com/play/seven-letter-science-round-1","fj":[{"category":"COMPOUND WORDS","solved":0,"players":1}]},{"code":"G11","date":"2022-10-20","final":false,"players":[{"name":"Arve Lund Ryeng","cls":"1STC","score":200},{"name":"Atle Ferdinand Måseide","cls":"1MUA","score":-800},{"name":"Tuva Marie Eaton Johansen","cls":"3STE","score":1000}],"correct":5,"of":23,"board":"Popular Invention","url":"https://jeopardylabs.com/play/popular-invention-round-2","fj":[{"category":"19th CENTURY LITERARY CHARACTERS","solved":1,"players":3}]},{"code":"G12","date":"2022-10-25","final":false,"players":[{"name":"Tuva Marie Eaton Johansen","cls":"3STE","score":600},{"name":"Maya-Sophie Gisela Lück","cls":"1STC","score":-400},{"name":"Maja Daldorff Kanck","cls":"3STA","score":0}],"correct":7,"of":23,"board":"This is “Su”","url":"https://jeopardylabs.com/play/this-is-su-round-1","fj":[{"category":"INTERNATIONAL AWARD TROPHIES","solved":0,"players":3}]},{"code":"G13","date":"2022-10-27","final":false,"players":[{"name":"Emil Guldbrandsen Josefsen","cls":"1STF","score":0},{"name":"Jona Heandaret Mäkäla","cls":"1STF","score":-200},{"name":"Tor Erik Bartnes Wikmark","cls":"1STF","score":-1400}],"correct":6,"of":25,"board":"Burgers","url":"https://jeopardylabs.com/play/burgers-round-2","fj":[{"category":"SCIENCE WORDS","solved":0,"players":1}]},{"code":"G14","date":"2022-11-01","final":false,"players":[{"name":"Emil Guldbrandsen Josefsen","cls":"1STF","score":0},{"name":"Maya-Sophie Gisela Lück","cls":"1STC","score":500},{"name":"Jannicke Andreassen","cls":"1STE","score":-1200}],"correct":6,"of":25,"board":"2 Letters, Second is K","url":"https://jeopardylabs.com/play/2-letters-second-is-k-round-1","fj":[{"category":"SCIENTIFIC ETYMOLOGY","solved":0,"players":2}]},{"code":"G15","date":"2022-11-08","final":false,"players":[{"name":"Maya-Sophie Gisela Lück","cls":"1STC","score":-1400},{"name":"Tuva Marie Eaton Johansen","cls":"3STE","score":1019},{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":3600}],"correct":9,"of":25,"board":"16-Letter Words","url":"https://jeopardylabs.com/play/16-letter-words-round-2"},{"code":"G16","date":"2022-11-10","final":false,"players":[{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":100},{"name":"Maja Daldorff Kanck","cls":"3STA","score":-600},{"name":"Tor Erik Bartnes Wikmark","cls":"1STF","score":0}],"correct":7,"of":25,"board":"Designing Women","url":"https://jeopardylabs.com/play/designing-women-round-1"},{"code":"G17","date":"2022-11-17","final":false,"players":[{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":10},{"name":"Tor Gabriel Berg Bjørvik","cls":"1STF","score":2000},{"name":"Emil Guldbrandsen Josefsen","cls":"1STF","score":-400}],"correct":5,"of":22,"board":"Word + Word = New Word","url":"https://jeopardylabs.com/play/word-word-new-word-round-2","fj":[{"category":"CHILDREN'S BOOKS","solved":0,"players":2},{"category":"LANDMARKS","solved":1,"players":2}]},{"code":"G18","date":"2022-11-22","final":false,"players":[{"name":"Eskil Johan Langhaug","cls":"2STF","score":1199},{"name":"Jannicke Andreassen","cls":"1STE","score":0},{"name":"Maya-Sophie Gisela Lück","cls":"1STC","score":500}],"correct":7,"of":24,"board":"But “OK”","url":"https://jeopardylabs.com/play/but-ok-round-1","fj":[{"category":"AMERICAN HISTORY","solved":2,"players":2}]},{"code":"G19","date":"2022-12-06","final":false,"players":[{"name":"Eskil Johan Langhaug","cls":"2STF","score":1400},{"name":"Theis Tiller Steensrud","cls":"1STF","score":-200},{"name":"Emil Guldbrandsen Josefsen","cls":"1STF","score":-400}],"correct":7,"of":25,"board":"Circle of Life","url":"https://jeopardylabs.com/play/circle-of-life-round-2","fj":[{"category":"FOOD & DRINK IN THE BIBLE","solved":1,"players":1}]},{"code":"G20","date":"2022-12-13","final":false,"players":[{"name":"Eskil Johan Langhaug","cls":"2STF","score":801},{"name":"Tor Gabriel Berg Bjørvik","cls":"1STF","score":-300},{"name":"Elnour Awadallah Elnour","cls":"1STF","score":800}],"correct":9,"of":24,"board":"It Takes a Villain","url":"https://jeopardylabs.com/play/it-takes-a-villain-round-1","fj":[{"category":"The Continents","solved":1,"players":2}]},{"code":"G21","date":"2022-12-15","final":false,"players":[{"name":"Arve Lund Ryeng","cls":"1STC","score":1001},{"name":"Maya-Sophie Gisela Lück","cls":"1STC","score":1000},{"name":"Aksel Tunby Kristiansen","cls":"1STC","score":0}],"correct":4,"of":25,"board":"Some Stern Words","url":"https://jeopardylabs.com/play/some-stern-words-round-2","fj":[{"category":"CHILDREN'S LITERATURE","solved":0,"players":2}]},{"code":"G22","date":"2022-12-20","final":false,"players":[{"name":"Eskil Johan Langhaug","cls":"2STF","score":-1600},{"name":"Fatma Yazgan","cls":"3STF","score":-400},{"name":"Emma Hermine Nilsen Vittring","cls":"3STF","score":200}],"correct":6,"of":25,"board":"I’m Reading You","url":"https://jeopardylabs.com/play/im-reading-you-round-1"},{"code":"G23","date":"2023-01-10","final":false,"players":[{"name":"Emma Hermine Nilsen Vittring","cls":"3STF","score":1600},{"name":"Tor Erik Bartnes Wikmark","cls":"1STF","score":-600},{"name":"Emil Guldbrandsen Josefsen","cls":"1STF","score":-400}],"correct":6,"of":25,"board":"Ind-icc-ted","url":"https://jeopardylabs.com/play/ind-icc-ted-round-2"},{"code":"G24","date":"2023-01-12","final":false,"players":[{"name":"Håkon Sagstuen Haugnes","cls":"1STC","score":-800},{"name":"Atle Ferdinand Måseide","cls":"1MUA","score":999},{"name":"Arve Lund Ryeng","cls":"1STC","score":1101}],"correct":13,"of":25,"board":"Group Names of Animals","url":"https://jeopardylabs.com/play/group-names-of-animals-round-1","fj":[{"category":"RENAISSANCE MEN","solved":0,"players":2}]},{"code":"G25","date":"2023-01-17","final":false,"players":[{"name":"Arve Lund Ryeng","cls":"1STC","score":-600},{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":2000},{"name":"Maya-Sophie Gisela Lück","cls":"1STC","score":600}],"correct":5,"of":25,"board":"Hundred “P”ercent","url":"https://jeopardylabs.com/play/hundred-percent-round-2","fj":[{"category":"POPULAR PHRASES","solved":2,"players":2}]},{"code":"G26","date":"2023-01-31","final":false,"players":[{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":-1300},{"name":"Elnour Awadallah Elnour","cls":"1STF","score":-500},{"name":"Emma Hermine Nilsen Vittring","cls":"3STF","score":1900}],"correct":10,"of":24,"board":"Old School Movies","url":"https://jeopardylabs.com/play/old-school-movies-round-1"},{"code":"G27","date":"2023-02-02","final":false,"players":[{"name":"Emma Hermine Nilsen Vittring","cls":"3STF","score":1600},{"name":"Arve Lund Ryeng","cls":"1STC","score":400}],"correct":9,"of":25,"board":"Words about Words","url":"https://jeopardylabs.com/play/words-about-words-round-2","fj":[{"category":"COUNTRIES OF THE WORLD","solved":1,"players":2}]},{"code":"G28","date":"2023-02-07","final":false,"players":[{"name":"Emma Hermine Nilsen Vittring","cls":"3STF","score":700},{"name":"Maja Daldorff Kanck","cls":"3STA","score":699},{"name":"Maya-Sophie Gisela Lück","cls":"1STC","score":0}],"correct":5,"of":25,"board":"Historic Names","url":"https://jeopardylabs.com/play/historic-names-round-1","fj":[{"category":"INTERNATIONAL ORGANIZATIONS","solved":1,"players":2}]},{"code":"G29","date":"2023-02-14","final":false,"players":[{"name":"Emma Hermine Nilsen Vittring","cls":"3STF","score":1999},{"name":"Lovise Sjøttem Jentoft","cls":"3STF","score":400},{"name":"Arve Lund Ryeng","cls":"1STC","score":0}],"correct":8,"of":25,"board":"Ra Ra Sis Boom Ba","url":"https://jeopardylabs.com/play/ra-ra-sis-boom-ba-round-2","fj":[{"category":"WORLD CITIES","solved":0,"players":3}]},{"code":"G30","date":"2023-02-16","final":false,"players":[{"name":"Emma Hermine Nilsen Vittring","cls":"3STF","score":-300},{"name":"Maja Daldorff Kanck","cls":"3STA","score":0},{"name":"Jonas Zakariassen","cls":"2STC","score":600}],"correct":8,"of":25,"board":"Canadian National Stuff, Eh?","url":"https://jeopardylabs.com/play/canadian-national-stuff-eh-round-1","fj":[{"category":"1960S HISTORY","solved":0,"players":2}]},{"code":"G31","date":"2023-02-21","final":false,"players":[{"name":"Jonas Zakariassen","cls":"2STC","score":-1200},{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":1200},{"name":"Øyan Åsgeirdatter Stensen","cls":"1STD","score":0}],"correct":10,"of":24,"board":"They Said No!","url":"https://jeopardylabs.com/play/they-said-no-round-2","fj":[{"category":"U.S. HISTORY","solved":0,"players":2}]},{"code":"G32","date":"2023-02-23","final":false,"players":[{"name":"Håkon Sagstuen Haugnes","cls":"1STC","score":267},{"name":"Arve Lund Ryeng","cls":"1STC","score":1499},{"name":"Synne Dahl Rostad","cls":"1STC","score":0}],"correct":7,"of":25,"board":"Chameleon","url":"https://jeopardylabs.com/play/chameleon-round-1"},{"code":"G33","date":"2023-03-02","final":false,"players":[{"name":"Arve Lund Ryeng","cls":"1STC","score":2000},{"name":"Maya-Sophie Gisela Lück","cls":"1STC","score":200},{"name":"Lea Lindner","cls":"1STC","score":0}],"correct":3,"of":25,"board":"The Treaty Says So","url":"https://jeopardylabs.com/play/the-treaty-says-so-round-2","fj":[{"category":"PAINTINGS","solved":2,"players":2}]},{"code":"G34","date":"2023-03-16","final":false,"players":[{"name":"Arve Lund Ryeng","cls":"1STC","score":300},{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":-200},{"name":"Maja Daldorff Kanck","cls":"3STA","score":900}],"correct":9,"of":25,"board":"Foreign Words & Phrases","url":"https://jeopardylabs.com/play/foreign-words-phrases-round-1"},{"code":"G35","date":"2023-03-21","final":false,"players":[{"name":"Maja Daldorff Kanck","cls":"3STA","score":2900},{"name":"Eskil Johan Langhaug","cls":"2STF","score":2400},{"name":"Snorre Hansen Wilhelmsen","cls":"2STF","score":1500}],"correct":null,"of":null,"board":"Alphanumerics","url":"https://jeopardylabs.com/play/alphanumerics-round-2","fj":[{"category":"BESTSELLING NOVELS","solved":1,"players":3}]},{"code":"G36","date":"2023-03-23","final":false,"players":[{"name":"Maja Daldorff Kanck","cls":"3STA","score":400},{"name":"Tuva Marie Eaton Johansen","cls":"3STE","score":253},{"name":"Emil Guldbrandsen Josefsen","cls":"1STF","score":-200}],"correct":4,"of":25,"board":"TV","url":"https://jeopardylabs.com/play/tv-round-1","fj":[{"category":"EUROPEAN COUNTRY NAMES","solved":2,"players":2}]},{"code":"G37","date":"2023-03-30","final":false,"players":[{"name":"Maja Daldorff Kanck","cls":"3STA","score":750},{"name":"Tor Gabriel Berg Bjørvik","cls":"1STF","score":0},{"name":"Tor Erik Bartnes Wikmark","cls":"1STF","score":0}],"correct":6,"of":25,"board":"That Codex Moment","url":"https://jeopardylabs.com/play/that-codex-moment-round-2","fj":[{"category":"OFFICIAL LANGUAGES","solved":0,"players":2}]},{"code":"G38","date":"2023-04-11","final":false,"players":[{"name":"Maja Daldorff Kanck","cls":"3STA","score":0},{"name":"Arve Lund Ryeng","cls":"1STC","score":300},{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":700}],"correct":9,"of":25,"board":"The Syndrome Syndrome","url":"https://jeopardylabs.com/play/the-syndrome-syndrome-round-1"},{"code":"G39","date":"2023-04-13","final":false,"players":[{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":601},{"name":"Emma Hermine Nilsen Vittring","cls":"3STF","score":300},{"name":"Fatma Yazgan","cls":"3STF","score":-1200}],"correct":6,"of":24,"board":"TV Pets","url":"https://jeopardylabs.com/play/tv-pets-round-2","fj":[{"category":"1970s SONGS","solved":1,"players":2}]},{"code":"G40","date":"2023-05-04","final":false,"players":[{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":1400},{"name":"Eskil Johan Langhaug","cls":"2STF","score":99},{"name":"Øyan Åsgeirdatter Stensen","cls":"1STD","score":0}],"correct":11,"of":25,"board":"This Land is your Landlocked Country","url":"https://jeopardylabs.com/play/this-land-is-your-landlocked-country-round-1"},{"code":"G41","date":"2023-05-09","final":false,"players":[{"name":"Sam Rødseth Bang Hansson","cls":"1STC","score":0},{"name":"Andreas Brage Auklie","cls":"2STA","score":0},{"name":"Maja Daldorff Kanck","cls":"3STA","score":1700}],"correct":5,"of":25,"board":"The Reign of King Charles II","url":"https://jeopardylabs.com/play/the-reign-of-king-charles-ii-round-2","fj":[{"category":"MYTHS & LEGENDS","solved":1,"players":2}]},{"code":"G42","date":"2023-05-11","final":false,"players":[{"name":"Andreas Nordmo","cls":"2STA","score":-600},{"name":"Erling Lein-Mathisen","cls":"2STA","score":-1000},{"name":"Eskil Johan Langhaug","cls":"2STF","score":0}],"correct":4,"of":25,"board":"“All” in","url":"https://jeopardylabs.com/play/all-in-94","fj":[{"category":"MOVIE QUOTES","solved":0,"players":1}]},{"code":"G43","date":"2023-05-16","final":false,"players":[{"name":"Maja Daldorff Kanck","cls":"3STA","score":2600},{"name":"Andreas Brage Auklie","cls":"2STA","score":1400},{"name":"Erling Lein-Mathisen","cls":"2STA","score":0}],"correct":12,"of":25,"board":"The Gender-free option","url":"https://jeopardylabs.com/play/the-gender-free-option-round-2","fj":[{"category":"HISTORY","solved":0,"players":3},{"category":"WORLD CAPITALS","solved":1,"players":2}]},{"code":"Final","date":"2023-06-05","final":true,"board":"International Business","url":"https://jeopardylabs.com/play/international-business-round-2","board2":"Pop & Rock Music","url2":"https://jeopardylabs.com/play/pop-rock-music-round-2","players":[{"name":"Emma Hermine Nilsen Vittring","cls":"3STF","score":14399,"mid":10099},{"name":"Tuva Marie Eaton Johansen","cls":"3STE","score":12058,"mid":7259},{"name":"Maja Daldorff Kanck","cls":"3STA","score":0,"mid":4950}],"fj":[{"category":"19th CENTURY LITERATURE","solved":1,"players":3}],"correct":21,"of":50}]},{"id":"2023-24","label":"2023–24","format":"runs","games":[{"code":"G1","date":"2023-09-14","final":false,"players":[{"name":"Eskil Johan Langhaug","cls":"3STF","score":399},{"name":"Sam Rødseth Bang Hansson","cls":"2STC","score":800},{"name":"Tor Erik Bartnes Wikmark","cls":"2STF","score":-1200}],"correct":8,"of":24,"board":"Hobbies","url":"https://jeopardylabs.com/play/hobbies-round-2","fj":[{"category":"INTERNATIONAL FRIENDSHIP","solved":0,"players":2}]},{"code":"G2","date":"2023-09-21","final":false,"players":[{"name":"Sam Rødseth Bang Hansson","cls":"2STC","score":1000},{"name":"Andreas Brage Auklie","cls":"3STA","score":800},{"name":"Erling Lein-Mathisen","cls":"3STA","score":750}],"correct":2,"of":25,"board":"Let’s Eat","url":"https://jeopardylabs.com/play/lets-eat-round-1","fj":[{"category":"AESTHETIC MOVEMENTS","solved":0,"players":3}]},{"code":"G3","date":"2023-09-28","final":false,"players":[{"name":"Sam Rødseth Bang Hansson","cls":"2STC","score":1400},{"name":"Arve Lund Ryeng","cls":"2STC","score":799},{"name":"Eirik Andreas Uhre","cls":"1STF","score":-600}],"correct":10,"of":25,"board":"Homophones","url":"https://jeopardylabs.com/play/homophones-round-2"},{"code":"G4","date":"2023-09-28","final":false,"players":[{"name":"Sam Rødseth Bang Hansson","cls":"2STC","score":0},{"name":"Andreas Brage Auklie","cls":"3STA","score":100},{"name":"Andreas Nordmo","cls":"3STD","score":-900}],"correct":6,"of":25,"board":"Classic Rock Guitarists","url":"https://jeopardylabs.com/play/classic-rock-guitarists-round-1"},{"code":"G5","date":"2023-10-10","final":false,"players":[{"name":"Andreas Brage Auklie","cls":"3STA","score":700},{"name":"Erling Lein-Mathisen","cls":"3STA","score":2400},{"name":"Theodor Thorsby","cls":"2STF","score":1199}],"correct":9,"of":25,"board":"Geographica","url":"https://jeopardylabs.com/play/geographica-round-2","fj":[{"category":"19th CENTURY BRITISH AUTHORS","solved":0,"players":3}]},{"code":"G6","date":"2023-10-12","final":false,"players":[{"name":"Erling Lein-Mathisen","cls":"3STA","score":0},{"name":"Sam Rødseth Bang Hansson","cls":"2STC","score":1500},{"name":"Andreas Nordmo","cls":"3STD","score":-200}],"correct":9,"of":25,"board":"Places to Live","url":"https://jeopardylabs.com/play/places-to-live-round-1","fj":[{"category":"20th CENTURY PHYSICS","solved":0,"players":1}]},{"code":"G7","date":"2023-10-17","final":false,"players":[{"name":"Linnea Andersson Brekke","cls":"3STF","score":0},{"name":"Eskil Johan Langhaug","cls":"3STF","score":200},{"name":"Jyotirmoya Swain","cls":"2STF","score":-400}],"correct":1,"of":25,"board":"Initials to Roman Numerals to Numbers III","url":"https://jeopardylabs.com/play/initials-to-roman-numerals-to-numbers-iii"},{"code":"G8","date":"2023-10-19","final":false,"players":[{"name":"Sam Rødseth Bang Hansson","cls":"2STC","score":1000},{"name":"Arve Lund Ryeng","cls":"2STC","score":0},{"name":"Theodor Thorsby","cls":"2STF","score":600}],"correct":8,"of":25,"board":"Newer Words & Phrases","url":"https://jeopardylabs.com/play/newer-words-phrases-round-2","fj":[{"category":"FICTIONAL CHARACTERS","solved":0,"players":3}]},{"code":"G9","date":"2023-10-26","final":false,"players":[{"name":"Eskil Johan Langhaug","cls":"3STF","score":199},{"name":"Sam Rødseth Bang Hansson","cls":"2STC","score":-900},{"name":"Maya-Sophie Gisela Lück","cls":"2STC","score":200}],"correct":4,"of":25,"board":"How's your Latin Vocabulary?","url":"https://jeopardylabs.com/play/hows-your-latin-vocabulary-round-1","fj":[{"category":"MUSIC LEGENDS","solved":0,"players":2}]},{"code":"G10","date":"2023-11-09","final":false,"players":[{"name":"Maya-Sophie Gisela Lück","cls":"2STC","score":800},{"name":"Tor Gabriel Berg Bjørvik","cls":"2STF","score":-2000},{"name":"Emil Guldbrandsen Josefsen","cls":"2STF","score":-1800}],"correct":2,"of":25,"board":"Real Names on the Marquis","url":"https://jeopardylabs.com/play/real-names-on-the-marquis-round-2"},{"code":"G11","date":"2023-11-16","final":false,"players":[{"name":"Maya-Sophie Gisela Lück","cls":"2STC","score":1200},{"name":"Theodor Thorsby","cls":"2STF","score":-100},{"name":"Arve Lund Ryeng","cls":"2STC","score":900}],"correct":8,"of":25,"board":"The “O_ED”","url":"https://jeopardylabs.com/play/the-o_ed-round-1","fj":[{"category":"SCULPTORS","solved":0,"players":2}]},{"code":"G12","date":"2023-11-21","final":false,"players":[{"name":"Maya-Sophie Gisela Lück","cls":"2STC","score":1400},{"name":"Emil Guldbrandsen Josefsen","cls":"2STF","score":190},{"name":"David Soltaninia","cls":"2STF","score":400}],"correct":6,"of":25,"board":"Synonyms for black","url":"https://jeopardylabs.com/play/synonyms-for-black-round-2","fj":[{"category":"WORD ORIGINS","solved":0,"players":3}]},{"code":"G13","date":"2023-11-30","final":false,"players":[{"name":"Maya-Sophie Gisela Lück","cls":"2STC","score":100},{"name":"Isak Torkjelson Sandanger","cls":"3STF","score":-400},{"name":"Lucas Sebastian Brox-Øygård","cls":"3STF","score":-800}],"correct":3,"of":25,"board":"Beastly North American Geography","url":"https://jeopardylabs.com/play/beastly-north-american-geography-round-1"},{"code":"G14","date":"2023-12-05","final":false,"players":[{"name":"Maya-Sophie Gisela Lück","cls":"2STC","score":-600},{"name":"Sam Rødseth Bang Hansson","cls":"2STC","score":3199},{"name":"Arve Lund Ryeng","cls":"2STC","score":0}],"correct":13,"of":25,"board":"Snails","url":"https://jeopardylabs.com/play/snails-round-1"},{"code":"G15","date":"2023-12-14","final":false,"players":[{"name":"Sam Rødseth Bang Hansson","cls":"2STC","score":0},{"name":"Eirik Andreas Uhre","cls":"1STF","score":0},{"name":"Eskil Johan Langhaug","cls":"3STF","score":1800}],"correct":10,"of":25,"board":"On the Cusps of Greatness","url":"https://jeopardylabs.com/play/on-the-cusps-of-greatness-round-1","fj":[{"category":"TOYS & GAMES","solved":1,"players":2}]},{"code":"G16","date":"2023-12-18","final":false,"players":[{"name":"Eskil Johan Langhaug","cls":"3STF","score":801},{"name":"Arve Lund Ryeng","cls":"2STC","score":800},{"name":"Snorre Hansen Wilhelmsen","cls":"3STF","score":0}],"correct":8,"of":25,"board":"Authors' Fictional Places","url":"https://jeopardylabs.com/play/authors-fictional-places-round-2"},{"code":"G17","date":"2024-01-16","final":false,"players":[{"name":"Eskil Johan Langhaug","cls":"3STF","score":-800},{"name":"Elnour Awadallah Elnour","cls":"2STF","score":400},{"name":"Tor Erik Bartnes Wikmark","cls":"2STF","score":-200}],"correct":7,"of":24,"board":"11-Letter Words","url":"https://jeopardylabs.com/play/11-letter-words-round-1"},{"code":"G18","date":"2024-01-18","final":false,"players":[{"name":"Elnour Awadallah Elnour","cls":"2STF","score":0},{"name":"Arve Lund Ryeng","cls":"2STC","score":799},{"name":"Theodor Thorsby","cls":"2STF","score":0}],"correct":7,"of":25,"board":"The Great American Read's Top 100 Books","url":"https://jeopardylabs.com/play/the-great-american-reads-top-100-books-round-1","fj":[{"category":"SEA LIFE","solved":1,"players":1}]},{"code":"G19","date":"2024-01-22","final":false,"players":[{"name":"Arve Lund Ryeng","cls":"2STC","score":null},{"name":"Eskil Johan Langhaug","cls":"3STF","score":null},{"name":"Aksel Tunby Kristiansen","cls":"2STC","score":null}],"correct":null,"of":null,"board":"Business","url":"https://jeopardylabs.com/play/business-round-1"},{"code":"Final","date":"2024-01-25","final":true,"board":"Eponyms","url":"https://jeopardylabs.com/play/eponyms-round-2","board2":"5 Nobel Truths","url2":"https://jeopardylabs.com/play/5-nobel-truths-round-1","players":[{"name":"Sam Rødseth Bang Hansson","cls":"2STC","score":9200,"mid":5800},{"name":"Erling Lein-Mathisen","cls":"3STA","score":3800,"mid":3600},{"name":"Eskil Johan Langhaug","cls":"3STF","score":1,"mid":1801}],"fj":[{"category":"COUNTRIES OF THE WORLD","solved":0,"players":1}],"correct":21,"of":50}]},{"id":"2026-27","label":"2026–27","format":"runs","games":[]}],"recordedRuns":[{"name":"Åse Herder-Augestad","cls":"3STE","season":"2020-21","total":4800,"rounds":4},{"name":"Elias Crogh","cls":"3STE","season":"2020-21","total":1500,"rounds":4}],"finalClues":[{"solved":1,"players":2},{"solved":1,"players":1},{"solved":0,"players":2},{"solved":0,"players":2},{"solved":2,"players":2},{"solved":0,"players":3},{"solved":1,"players":2},{"solved":3,"players":9},{"solved":1,"players":2},{"solved":0,"players":1},{"solved":0,"players":3},{"solved":0,"players":3},{"solved":1,"players":3},{"solved":2,"players":2},{"solved":2,"players":2},{"solved":1,"players":2},{"solved":1,"players":2},{"solved":0,"players":3},{"solved":0,"players":2},{"solved":1,"players":3},{"solved":0,"players":3},{"solved":0,"players":2},{"solved":2,"players":2},{"solved":1,"players":3},{"solved":2,"players":2},{"solved":2,"players":2},{"solved":0,"players":3},{"solved":0,"players":3},{"solved":0,"players":2},{"solved":1,"players":3},{"solved":0,"players":2},{"solved":2,"players":3},{"solved":1,"players":3},{"solved":0,"players":3},{"solved":0,"players":3},{"solved":0,"players":3},{"solved":1,"players":3},{"solved":0,"players":3},{"solved":1,"players":2},{"solved":1,"players":2},{"solved":0,"players":2},{"solved":1,"players":2},{"solved":0,"players":2},{"solved":0,"players":2},{"solved":0,"players":3},{"solved":1,"players":3},{"solved":2,"players":3},{"solved":0,"players":3},{"solved":2,"players":3},{"solved":0,"players":3},{"solved":0,"players":2},{"solved":0,"players":3},{"solved":0,"players":3},{"solved":0,"players":3},{"solved":0,"players":4},{"solved":3,"players":3},{"solved":0,"players":2},{"solved":1,"players":3},{"solved":0,"players":2},{"solved":0,"players":2},{"solved":0,"players":3},{"solved":1,"players":3},{"solved":0,"players":2},{"solved":0,"players":3},{"solved":2,"players":7},{"solved":0,"players":3},{"solved":0,"players":3},{"solved":2,"players":4},{"solved":2,"players":3},{"solved":0,"players":3},{"solved":0,"players":1},{"solved":0,"players":2},{"solved":0,"players":2},{"solved":1,"players":2},{"solved":1,"players":1},{"solved":1,"players":2},{"solved":0,"players":2},{"solved":0,"players":2},{"solved":2,"players":2},{"solved":1,"players":2},{"solved":0,"players":2},{"solved":0,"players":3},{"solved":0,"players":2},{"solved":0,"players":2},{"solved":2,"players":2},{"solved":0,"players":2},{"solved":0,"players":3},{"solved":1,"players":2},{"solved":1,"players":2},{"solved":0,"players":1},{"solved":0,"players":3},{"solved":1,"players":2},{"solved":1,"players":3},{"solved":0,"players":2},{"solved":0,"players":2},{"solved":0,"players":3},{"solved":0,"players":2},{"solved":0,"players":3},{"solved":0,"players":1},{"solved":0,"players":3},{"solved":0,"players":2},{"solved":0,"players":2},{"solved":0,"players":3},{"solved":0,"players":2},{"solved":2,"players":3},{"solved":1,"players":2},{"solved":1,"players":1},{"solved":0,"players":1}]}</script>
+<script id="jeo-app">
+(() => {
+const DATA = JSON.parse(document.getElementById("jeo-data").textContent);
+const app = document.getElementById("app");
+const MINUS = "−";
+const fmt = n => n == null ? "–" : (n < 0 ? MINUS : "") + Math.abs(n).toLocaleString("en-GB");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const fdate = d => { if (!d) return ""; const [y, m, dd] = d.split("-").map(Number); return `${dd} ${MON[m - 1]} ${y}`; };
+const safeUrl = u => (typeof u === "string" && /^https?:\/\/(www\.)?jeopardylabs\.com\//i.test(u.trim())) ? u.trim() : null;
+const boardLink = (name, url, round) => {
+  const pre = round ? `<span class="rnd">R${round}</span>` : "";
+  const u = safeUrl(url);
+  return `<div>${pre}${u ? `<a class="cat board-link" href="${esc(u)}" target="_blank" rel="noopener">${esc(name)}<span aria-hidden="true"> ↗</span></a>` : `<span class="cat">${esc(name)}</span>`}</div>`;
+};
+const fjHTML = g => !(g.fj && g.fj.length) ? "" :
+  `<div class="fj">${g.fj.map(f => `<div><span class="fj-k">Final Jeopardy</span> ${esc(f.category)} <span class="fj-n">· ${f.solved} of ${f.players} right</span></div>`).join("")}</div>`;
+const sc = n => `<span class="num${n < 0 ? " neg" : ""}">${fmt(n)}</span>`;
+const seasonLabel = s => s.label || s.id.replace("-", "–");
+const current = () => DATA.seasons.find(s => s.id === DATA.current);
+
+/* A run starts at any game a player plays while not already on one, continues while they win,
+   and ends at the first game they don't win (that game counts). Absence does not end a run.
+   Finals are not part of runs. */
+function runsFor(season) {
+  if (season.format === "tournament") return (DATA.recordedRuns || []).filter(r => r.season === season.id).map(r => ({ ...r, games: [], open: false, recorded: true }));
+  const active = new Map(), out = [];
+  season.games.forEach((g, gi) => {
+    if (g.final || !g.players.length || g.players.some(p => p.score == null)) return;
+    const top = Math.max(...g.players.map(p => p.score));
+    g.players.forEach(p => {
+      let r = active.get(p.name);
+      if (!r) { r = { name: p.name, cls: p.cls, season: season.id, total: 0, rounds: 0, games: [] }; active.set(p.name, r); }
+      r.cls = p.cls || r.cls;
+      r.total += p.score; r.rounds += 1; r.games.push({ gi, score: p.score, won: p.score === top, code: g.code });
+      if (p.score < top) { r.open = false; out.push(r); active.delete(p.name); }
+    });
+  });
+  active.forEach(r => { r.open = true; out.push(r); });
+  return out;
+}
+const bestPerPlayer = runs => {
+  const best = new Map();
+  runs.forEach(r => { const b = best.get(r.name); if (!b || r.total > b.total || (r.total === b.total && r.rounds < b.rounds)) best.set(r.name, r); });
+  return [...best.values()].sort((a, b) => b.total - a.total || a.rounds - b.rounds || a.name.localeCompare(b.name));
+};
+const winnerOf = g => { const ps = g.players.filter(p => p.score != null); if (!ps.length) return null; const top = Math.max(...ps.map(p => p.score)); return ps.filter(p => p.score === top); };
+function championOf(season) {
+  const finals = season.games.filter(g => g.final && winnerOf(g));
+  if (!finals.length) return null;
+  const last = finals[finals.length - 1];
+  return { ...winnerOf(last)[0], date: last.date };
+}
+
+function strip(r, season) {
+  const tiles = r.games.map(x => `<div class="tile ${x.won ? "w" : "l"}" title="${esc(season.games[x.gi].board)}"><b class="${x.score < 0 ? "neg" : ""}">${fmt(x.score)}</b><span>${esc(x.code || "")}</span></div>`).join("");
+  return `<div class="strip">${tiles}${r.open ? `<div class="tile open">next game</div>` : ""}</div>`;
+}
+
+function heroHTML() {
+  const s = current();
+  const runs = runsFor(s);
+  const played = s.games.filter(g => !g.final).length;
+  const champ = championOf(s);
+  let body;
+  if (!s.games.length) {
+    body = `<div class="empty"><strong>The board is set. No games yet.</strong><span class="muted">The first result goes up here as soon as it is played. Every win keeps a player on the board, and their run total grows until someone beats them.</span></div>`;
+  } else {
+    const open = runs.filter(r => r.open).sort((a, b) => b.total - a.total);
+    const lead = bestPerPlayer(runs).slice(0, 10);
+    body = `
+      ${champ ? `<div class="champ"><div class="eyebrow">Season champion</div><div class="who">${esc(champ.name)}<span class="cls">${esc(champ.cls || "")}</span></div><div class="muted">Won the final with ${fmt(champ.score)} points.</div></div>` : ""}
+      ${open.length ? `<div class="runs">${open.map(r => `<div class="run"><div class="head-row"><div><div class="eyebrow">${r.rounds > 1 || r.games.at(-1)?.won ? "On a run" : "Still on the board"}</div><div class="champ"><div class="who">${esc(r.name)}<span class="cls">${esc(r.cls || "")}</span></div></div></div><div class="total">${fmt(r.total)}</div></div>${strip(r, s)}</div>`).join("")}</div>` : ""}
+      <div class="scroll"><table><thead><tr><th></th><th>Best run this season</th><th class="r">Games</th><th class="r">Points</th></tr></thead><tbody>
+      ${lead.map((r, i) => `<tr class="${i === 0 ? "top1" : ""}"><td class="rank">${i + 1}</td><td><span class="name">${esc(r.name)}</span><span class="cls-chip">${esc(r.cls || "")}</span>${r.open ? `<span class="live">live</span>` : ""}</td><td class="r">${r.rounds}</td><td class="r">${sc(r.total)}</td></tr>`).join("")}
+      </tbody></table></div>`;
+  }
+  return `<section class="panel hero" id="season">
+    <div class="head-row"><div><div class="eyebrow">This season</div><h2>${esc(seasonLabel(s))}</h2></div><span class="muted num">${played} game${played === 1 ? "" : "s"} played</span></div>
+    ${body}
+    <div id="editor-slot"></div>
+  </section>`;
+}
+
+function allRuns() { return DATA.seasons.flatMap(s => runsFor(s)); }
+
+function hallHTML() {
+  const best = bestPerPlayer(allRuns()).slice(0, 20);
+  const lbl = id => seasonLabel(DATA.seasons.find(s => s.id === id) || { id });
+  return `<section id="hall"><div class="head-row"><h2>Hall of Fame</h2><span class="muted">Best run per player, all seasons</span></div>
+  <div class="panel scroll"><table><thead><tr><th></th><th>Player</th><th>Season</th><th class="r">Games</th><th class="r">Points</th></tr></thead><tbody>
+  ${best.map((r, i) => `<tr class="${i === 0 ? "top1" : ""}"><td class="rank">${i + 1}</td><td><span class="name">${esc(r.name)}</span><span class="cls-chip">${esc(r.cls || "")}</span>${r.open && r.season === DATA.current ? `<span class="live">live</span>` : ""}</td><td><span class="season-chip">${esc(lbl(r.season))}</span></td><td class="r">${r.rounds}</td><td class="r">${sc(r.total)}</td></tr>`).join("")}
+  </tbody></table></div>
+  <p class="note">Spring 2021 was played as a tournament in rounds, so its two entries are the totals recorded that year.</p></section>`;
+}
+
+function champsHTML() {
+  const cards = DATA.seasons.map(s => ({ s, c: championOf(s) })).filter(x => x.c).reverse();
+  if (!cards.length) return "";
+  return `<section id="champions"><h2>Champions</h2><div class="champs">
+  ${cards.map(({ s, c }) => `<div class="champ-card"><div class="yr">${esc(seasonLabel(s))}</div><div class="who">${esc(c.name)}</div><div class="pts">${esc(c.cls || "")} · ${s.format === "tournament" ? `won the final, ${fmt(c.score)}` : `${fmt(c.score)} after the final`}</div></div>`).join("")}
+  </div><p class="note">Finalists start the final with the total of their best run, so a final score includes it.</p></section>`;
+}
+
+function recordsHTML() {
+  const runs = allRuns().filter(r => !r.recorded);
+  const longest = [...runs].sort((a, b) => b.rounds - a.rounds || b.total - a.total)[0];
+  let hi = null, games = new Map(), wins = new Map(), board = null, plays = 0, solved = 0;
+  DATA.seasons.forEach(s => s.games.forEach(g => {
+    if (g.final) return;
+    const w = winnerOf(g) || [];
+    g.players.forEach(p => {
+      games.set(p.name, (games.get(p.name) || 0) + 1);
+      if (p.score != null && (!hi || p.score > hi.score)) hi = { ...p, g, s };
+    });
+    w.forEach(p => wins.set(p.name, (wins.get(p.name) || 0) + 1));
+    if (g.correct != null && g.of && (!board || g.correct / g.of > board.correct / board.of)) board = { ...g, s };
+  }));
+  (DATA.finalClues || []).forEach(c => { plays += c.players; solved += c.solved; });
+  const top = m => { let best = null; m.forEach((v, k) => { if (!best || v > best[1]) best = [k, v]; }); return best; };
+  const mg = top(games), mw = top(wins);
+  const recs = [
+    longest && [`${longest.rounds} games`, "Longest run", `${longest.name}, ${seasonLabel(DATA.seasons.find(s => s.id === longest.season))}`],
+    hi && [fmt(hi.score), "Most points in one game", `${hi.name}, on “${hi.g.board}”, ${fdate(hi.g.date)}`],
+    mw && [`${mw[1]} wins`, "Most games won", mw[0]],
+    mg && [`${mg[1]} games`, "Most games played", mg[0]],
+    board && [`${board.correct} of ${board.of}`, "Most correct answers in one game", `All three players together, on “${board.board}”, ${fdate(board.date)}`],
+    plays && [`${Math.round(100 * solved / plays)}%`, "Final Jeopardy answers that were right", `${solved} of ${plays} attempts since 2021`],
+  ].filter(Boolean);
+  return `<section id="records"><h2>Records</h2><div class="records">
+  ${recs.map(([v, w, who]) => `<div class="rec"><div class="eyebrow">${esc(w)}</div><div class="val">${esc(v)}</div><div class="what">${esc(who)}</div></div>`).join("")}
+  </div><p class="note">Records leave out the finals. Spring 2021 counts for games and wins but not for runs.</p></section>`;
+}
+
+let archiveSeason = null;
+function archiveHTML() {
+  const seasons = DATA.seasons.filter(s => s.games.length);
+  if (!seasons.length) return "";
+  if (!archiveSeason || !seasons.find(s => s.id === archiveSeason)) archiveSeason = seasons[seasons.length - 1].id;
+  const s = DATA.seasons.find(x => x.id === archiveSeason);
+  const canEdit = editor.enabled && s.id === DATA.current;
+  const rows = s.games.map((g, gi) => ({ g, gi })).reverse();
+  return `<section id="archive"><div class="head-row"><h2>Every game</h2>
+    <div class="tabs" role="group" aria-label="Season">${seasons.map(x => `<button class="tab" type="button" data-season="${esc(x.id)}" aria-pressed="${x.id === archiveSeason}">${esc(seasonLabel(x))}</button>`).join("")}</div></div>
+  <div class="panel scroll"><table><thead><tr><th>Game</th><th>Board</th><th>Players</th><th class="r" title="Correct answers by all three players together">Correct</th>${canEdit ? "<th></th>" : ""}</tr></thead><tbody>
+  ${rows.map(({ g, gi }) => { const w = (winnerOf(g) || []).map(p => p.name); return `<tr>
+    <td><div class="mono">${esc(g.code || "")}</div><div class="muted" style="font-size:12px;white-space:nowrap">${fdate(g.date)}</div></td>
+    <td>${g.final ? `<div class="final-tag" style="margin:0 0 4px">Final · two rounds</div>` : ""}<div class="boards">${boardLink(g.board, g.url, g.board2 ? "1" : "")}${g.board2 ? boardLink(g.board2, g.url2, "2") : ""}</div>${fjHTML(g)}</td>
+    <td style="min-width:230px"><div class="game-players">${g.players.map(p => `<div class="gp ${w.includes(p.name) ? "won" : ""}"><span class="pn">${esc(p.name)}<span class="cls-chip">${esc(p.cls || "")}</span></span><span class="ps">${p.mid != null ? `<span class="mid" title="Score after round 1">R1 ${fmt(p.mid)} →</span>` : ""}${p.score == null ? `<span class="muted">not recorded</span>` : sc(p.score)}</span></div>`).join("")}</div></td>
+    <td class="r num">${g.correct != null ? `${g.correct}/${g.of}` : "–"}</td>
+    ${canEdit ? `<td><button class="link" type="button" data-edit="${gi}">Edit</button></td>` : ""}
+  </tr>`; }).join("")}
+  </tbody></table></div>
+  <p class="note">Each game is played on one JeopardyLabs board of five categories, named after the first one. <em>Correct</em> is the number of right answers from all three players together.</p></section>`;
+}
+
+/* ---------- editor (only for people who can edit this page) ---------- */
+const editor = { enabled: false, open: false, idx: null, confirmDelete: false, status: "", err: false, busy: false, artifact: null };
+const knownPlayers = () => {
+  const m = new Map();
+  DATA.seasons.forEach(s => s.games.forEach(g => g.players.forEach(p => m.set(p.name, p.cls))));
+  return m;
+};
+function nextCode() {
+  const s = current();
+  const n = s.games.filter(g => !g.final).map(g => +((g.code || "").match(/^G(\d+)$/) || [0, 0])[1]);
+  return "G" + ((n.length ? Math.max(...n) : 0) + 1);
+}
+function editorHTML() {
+  if (!editor.enabled) return "";
+  const msg = editor.status ? `<span class="status ${editor.err ? "err" : ""}" role="status">${esc(editor.status)}</span>` : "";
+  if (!editor.open) return `<div class="actions"><button class="btn" type="button" id="add-game">Add a game result</button>${msg}</div>`;
+  const g = editor.idx != null ? current().games[editor.idx] : { code: nextCode(), date: new Date().toISOString().slice(0, 10), board: "", url: "", final: false, correct: null, of: 25, players: [{}, {}, {}] };
+  const ps = [0, 1, 2].map(i => g.players[i] || {});
+  const names = [...knownPlayers().keys()].sort((a, b) => a.localeCompare(b));
+  return `<form id="game-form" class="panel" style="background:var(--bg)" novalidate>
+    <h3>${editor.idx != null ? `Edit ${esc(g.code)}` : "Add a game result"}</h3>
+    <div class="grid2">
+      <label for="f-date">Date<input id="f-date" type="date" value="${esc(g.date || "")}" required></label>
+      <label for="f-code">Game<input id="f-code" value="${esc(g.code || "")}" placeholder="G1"></label>
+      <label for="f-cat" style="grid-column:1/-1">Board (named after its first category)<input id="f-cat" value="${esc(g.board)}" placeholder="Rhyme Time" required></label>
+      <label for="f-url" style="grid-column:1/-1">JeopardyLabs link<input id="f-url" type="url" value="${esc(g.url || "")}" placeholder="https://jeopardylabs.com/play/…"></label>
+    </div>
+    <datalist id="players-list">${names.map(n => `<option value="${esc(n)}"></option>`).join("")}</datalist>
+    ${ps.map((p, i) => `<div class="prow">
+      <label for="f-n${i}">Player ${i + 1}<input id="f-n${i}" list="players-list" value="${esc(p.name || "")}" autocomplete="off"></label>
+      <label for="f-c${i}">Class<input id="f-c${i}" value="${esc(p.cls || "")}" placeholder="2STC"></label>
+      <label for="f-s${i}">Score<input id="f-s${i}" type="number" step="1" inputmode="numeric" value="${p.score ?? ""}"></label>
+    </div>`).join("")}
+    <div class="grid2">
+      <label for="f-correct">Correct answers (all three players)<input id="f-correct" type="number" min="0" max="30" value="${g.correct ?? ""}"></label>
+      <label for="f-of">Clues on the board<input id="f-of" type="number" min="1" max="60" value="${g.of ?? 25}"></label>
+    </div>
+    <div class="grid2">
+      <label for="f-fjc" style="grid-column:1/-1">Final Jeopardy category<input id="f-fjc" value="${esc(g.fj?.[0]?.category || "")}" placeholder="WORD HISTORY"></label>
+      <label for="f-fjs">Final Jeopardy: right answers<input id="f-fjs" type="number" min="0" max="3" value="${g.fj?.[0]?.solved ?? ""}"></label>
+      <label for="f-fjp">Players who answered<input id="f-fjp" type="number" min="1" max="3" value="${g.fj?.[0]?.players ?? ""}"></label>
+    </div>
+    <label class="check" for="f-final"><input id="f-final" type="checkbox" ${g.final ? "checked" : ""}> This was the final (two rounds; scores include each finalist's best run)</label>
+    <div id="final-extra" class="grid2" ${g.final ? "" : "hidden"}>
+      <p class="note" style="grid-column:1/-1">For the final, the board above is round 1. The scores above are after round 2, and the correct answers are for both rounds together.</p>
+      <label for="f-cat2">Round 2 board<input id="f-cat2" value="${esc(g.board2 || "")}"></label>
+      <label for="f-url2">Round 2 link<input id="f-url2" type="url" value="${esc(g.url2 || "")}" placeholder="https://jeopardylabs.com/play/…"></label>
+      ${ps.map((p, i) => `<label for="f-m${i}">Player ${i + 1} after round 1<input id="f-m${i}" type="number" step="1" inputmode="numeric" value="${p.mid ?? ""}"></label>`).join("")}
+    </div>
+    <p class="note">Leave a player row empty if only two played. Saving updates the page for everyone who has it open.</p>
+    <div class="actions">
+      <button class="btn" type="submit" ${editor.busy ? "disabled" : ""}>${editor.busy ? "Saving…" : "Save result"}</button>
+      <button class="btn ghost" type="button" id="cancel-game">Cancel</button>
+      ${editor.idx != null ? (editor.confirmDelete
+        ? `<button class="btn danger" type="button" id="delete-yes">Delete ${esc(g.code)} for good</button><button class="link" type="button" id="delete-no">Keep it</button>`
+        : `<button class="btn ghost" type="button" id="delete-game">Delete this game</button>`) : ""}
+      ${msg}
+    </div>
+  </form>`;
+}
+
+function readForm() {
+  const v = id => document.getElementById(id).value.trim();
+  const players = [0, 1, 2].map(i => ({ name: v(`f-n${i}`), cls: v(`f-c${i}`).toUpperCase(), score: v(`f-s${i}`) })).filter(p => p.name);
+  if (!v("f-cat")) return { error: "Add the board name." };
+  if (v("f-url") && !safeUrl(v("f-url"))) return { error: "The link should be a jeopardylabs.com address, or leave it empty." };
+  if (!v("f-date")) return { error: "Add the date." };
+  if (players.length < 2) return { error: "Add at least two players." };
+  if (players.some(p => p.score === "" || isNaN(+p.score))) return { error: "Every player needs a score (0 is fine)." };
+  const known = knownPlayers();
+  players.forEach(p => { p.score = Math.round(+p.score); p.cls = p.cls || known.get(p.name) || ""; });
+  const c = v("f-correct");
+  const final = document.getElementById("f-final").checked;
+  const game = { code: v("f-code") || (final ? "Final" : ""), date: v("f-date"), board: v("f-cat"), url: safeUrl(v("f-url")), final, players, correct: c === "" ? null : +c, of: +v("f-of") || 25 };
+  if (v("f-fjc")) {
+    const fs = v("f-fjs"), fp = v("f-fjp");
+    if (fs === "" || fp === "" || +fs > +fp) return { error: "For Final Jeopardy, add how many answered and how many were right (right can't be more than answered)." };
+    game.fj = [{ category: v("f-fjc"), solved: +fs, players: +fp }].concat((editor.idx != null ? (current().games[editor.idx].fj || []).slice(1) : []));
+  }
+  if (final) {
+    if (v("f-url2") && !safeUrl(v("f-url2"))) return { error: "The round 2 link should be a jeopardylabs.com address, or leave it empty." };
+    game.board2 = v("f-cat2") || null; game.url2 = safeUrl(v("f-url2"));
+    [0, 1, 2].forEach(i => { const name = v(`f-n${i}`), m = v(`f-m${i}`); const p = players.find(x => x.name === name); if (p && m !== "" && !isNaN(+m)) p.mid = Math.round(+m); });
+  }
+  return { game };
+}
+
+function buildDocument() {
+  const head = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>';
+  const json = JSON.stringify(DATA).replace(/</g, "\\u003c");
+  const fonts = [...document.querySelectorAll('link[href*="fonts.g"]')].map(l => l.outerHTML).join("\n");
+  return head +
+    `<title>Kongsbakken Jeopardy</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n<meta name="robots" content="noindex, nofollow">\n${fonts}\n` +
+    `<style id="jeo-style">${document.getElementById("jeo-style").textContent}</style>\n` +
+    `<div class="wrap" id="app">\n  ${headerHTML}\n  <noscript>This page needs JavaScript to show the results.</noscript>\n</div>\n` +
+    `<script type="application/json" id="jeo-data">${json}<\/script>\n` +
+    `<script id="jeo-app">${document.getElementById("jeo-app").textContent}<\/script>` +
+    "</body></html>";
+}
+
+async function save(mutate) {
+  if (!editor.artifact) return;
+  const snapshot = JSON.stringify(DATA);
+  mutate();
+  editor.busy = true; editor.status = ""; editor.err = false; render();
+  try {
+    await editor.artifact.publish(buildDocument());
+    editor.open = false; editor.idx = null; editor.confirmDelete = false; editor.status = "Saved. Everyone with the page open sees it now."; editor.err = false;
+  } catch (e) {
+    Object.assign(DATA, JSON.parse(snapshot));
+    const code = e && e.code;
+    if (code === "not_writer" || code === "not_granted") { editor.enabled = false; }
+    else if (code === "conflict") { editor.status = "Someone else saved first. The page is reloading with their version; add this game again after it loads."; editor.err = true; }
+    else { editor.status = "Could not save (" + (code || "error") + "). Try again in a moment."; editor.err = true; }
+  }
+  editor.busy = false; render();
+}
+
+const headerHTML = app.querySelector("header").outerHTML;
+function render() {
+  app.innerHTML = headerHTML + heroHTML() + champsHTML() + hallHTML() + recordsHTML() + archiveHTML() +
+    `<footer>Results kept by the English department at Kongsbakken VGS, Tromsø. Seasons 2020–21 to 2023–24 from the club's score sheets.</footer>`;
+  const slot = document.getElementById("editor-slot");
+  if (slot) slot.innerHTML = editorHTML();
+}
+
+app.addEventListener("click", e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.season) { archiveSeason = t.dataset.season; render(); return; }
+  if (t.dataset.edit) { editor.open = true; editor.idx = +t.dataset.edit; editor.confirmDelete = false; editor.status = ""; render(); document.getElementById("season").scrollIntoView({ behavior: "smooth" }); return; }
+  if (t.id === "add-game") { editor.open = true; editor.idx = null; editor.status = ""; render(); document.getElementById("f-cat")?.focus(); }
+  if (t.id === "cancel-game") { editor.open = false; editor.idx = null; editor.confirmDelete = false; editor.status = ""; render(); }
+  if (t.id === "delete-game") { editor.confirmDelete = true; render(); }
+  if (t.id === "delete-no") { editor.confirmDelete = false; render(); }
+  if (t.id === "delete-yes") { const i = editor.idx; save(() => current().games.splice(i, 1)); }
+});
+app.addEventListener("change", e => {
+  if (e.target.id !== "f-final") return;
+  const box = document.getElementById("final-extra"); if (box) box.hidden = !e.target.checked;
+  const of = document.getElementById("f-of"); if (of && e.target.checked && +of.value === 25) of.value = 50;
+});
+app.addEventListener("submit", e => {
+  if (e.target.id !== "game-form") return;
+  e.preventDefault();
+  const r = readForm();
+  if (r.error) { editor.status = r.error; editor.err = true; const s = document.querySelector("#game-form .status"); if (s) { s.textContent = r.error; s.className = "status err"; } else { render(); } return; }
+  const i = editor.idx;
+  save(() => {
+    const games = current().games;
+    if (i != null) games[i] = r.game; else games.push(r.game);
+    games.sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.final - b.final));
+  });
+});
+
+render();
+
+(async () => {
+  try {
+    const user = await window.claude?.use?.("user");
+    const canEdit = user ? await user.canEdit() : false;
+    if (!canEdit) return;
+    const artifact = await window.claude.use("artifact");
+    if (!artifact) return;
+    editor.artifact = artifact; editor.enabled = true; render();
+  } catch (_) { /* read-only view */ }
+})();
+})();
+</script>
+
+</body>
+</html>
